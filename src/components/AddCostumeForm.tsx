@@ -81,7 +81,6 @@ export default function AddCostumeForm({ defaultCategory }: { defaultCategory: C
           name="photo"
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handlePhotoChange}
           className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm text-[var(--text-dim)] file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[#1a0f29]"
         />
