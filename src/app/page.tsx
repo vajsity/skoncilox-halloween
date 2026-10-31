@@ -57,7 +57,7 @@ export default async function Home({
             Zatiaľ žiadne kostýmy v tejto kategórii. Buď prvý, kto nejaký pridá!
           </p>
         ) : (
-          <VotingGrid costumes={costumes} category={category} initialVotedId={votedCostumeId} />
+          <VotingGrid key={category} costumes={costumes} category={category} initialVotedId={votedCostumeId} />
         )}
       </section>
 

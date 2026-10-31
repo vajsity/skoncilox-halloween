@@ -19,14 +19,9 @@ CREATE TABLE IF NOT EXISTS votes (
 
 ALTER TABLE votes ADD COLUMN IF NOT EXISTS voter_name TEXT NOT NULL DEFAULT '';
 
--- Drop duplicate votes from the same name in the same category (keep the earliest),
--- so the unique index below can be created on data that predates this constraint.
-DELETE FROM votes a USING votes b
-WHERE a.id > b.id
-  AND a.category = b.category
-  AND lower(a.voter_name) = lower(b.voter_name);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_category_voter_name ON votes (category, lower(voter_name));
+-- Reverted: a unique index on (category, voter_name) falsely blocked different
+-- people who happen to share a first name. Enforcement stays device-only.
+DROP INDEX IF EXISTS idx_votes_category_voter_name;
 
 CREATE INDEX IF NOT EXISTS idx_votes_costume_id ON votes (costume_id);
 CREATE INDEX IF NOT EXISTS idx_costumes_category ON costumes (category);
