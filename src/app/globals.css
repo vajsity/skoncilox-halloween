@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #120a1f;
+  --bg-elevated: #1d1030;
+  --card: #241536;
+  --border: #3c2558;
+  --orange: #ff7a1a;
+  --orange-light: #ffa552;
+  --purple: #8b5cf6;
+  --green: #7ee787;
+  --text: #f5eefc;
+  --text-dim: #b6a7d1;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-orange: var(--orange);
+  --color-purple: var(--purple);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(139, 92, 246, 0.25), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(255, 122, 26, 0.18), transparent 50%);
+}
