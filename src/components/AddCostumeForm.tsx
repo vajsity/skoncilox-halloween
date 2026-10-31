@@ -1,15 +1,19 @@
 'use client';
 
+import { upload } from '@vercel/blob/client';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import type { Category } from '@/lib/types';
+
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024; // 15 MB, raw phone photos before any resizing
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
 
 export default function AddCostumeForm({ defaultCategory }: { defaultCategory: Category }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<Category>(defaultCategory);
   const [preview, setPreview] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'saving'>('idle');
   const [error, setError] = useState('');
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -27,30 +31,55 @@ export default function AddCostumeForm({ defaultCategory }: { defaultCategory: C
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    formData.set('category', category);
-
     const name = String(formData.get('name') ?? '').trim();
+    const photo = fileInputRef.current?.files?.[0] ?? null;
+
     if (!name) {
       setError('Zadaj meno alebo názov kostýmu.');
       return;
     }
+    if (photo && !ALLOWED_TYPES.includes(photo.type)) {
+      setError('Fotka musí byť JPEG, PNG, WEBP alebo HEIC.');
+      return;
+    }
+    if (photo && photo.size > MAX_PHOTO_BYTES) {
+      setError('Fotka je príliš veľká (max 15 MB).');
+      return;
+    }
 
-    setSubmitting(true);
     try {
-      const res = await fetch('/api/costumes', { method: 'POST', body: formData });
+      let photoUrl: string | null = null;
+
+      if (photo) {
+        setStatus('uploading');
+        const blob = await upload(photo.name, photo, {
+          access: 'public',
+          handleUploadUrl: '/api/blob-upload',
+        });
+        photoUrl = blob.url;
+      }
+
+      setStatus('saving');
+      const res = await fetch('/api/costumes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, photoUrl }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Nepodarilo sa pridať kostým.');
-        setSubmitting(false);
+        setStatus('idle');
         return;
       }
       router.push(`/?category=${category}`);
       router.refresh();
     } catch {
-      setError('Chyba siete. Skús znova.');
-      setSubmitting(false);
+      setError('Nepodarilo sa nahrať fotku alebo pridať kostým. Skontroluj pripojenie a skús znova.');
+      setStatus('idle');
     }
   }
+
+  const submitting = status !== 'idle';
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
@@ -97,7 +126,7 @@ export default function AddCostumeForm({ defaultCategory }: { defaultCategory: C
         disabled={submitting}
         className="rounded-full bg-orange-500 py-3.5 text-center font-bold text-[#1a0f29] active:scale-95 disabled:opacity-60"
       >
-        {submitting ? 'Pridávam...' : '🎃 Pridať kostým'}
+        {status === 'uploading' ? 'Nahrávam fotku...' : status === 'saving' ? 'Pridávam...' : '🎃 Pridať kostým'}
       </button>
     </form>
   );

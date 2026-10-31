@@ -1,17 +1,27 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { sql } from '@/lib/db';
 import { isCategory } from '@/lib/types';
 
-const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
+function isTrustedBlobUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === 'https:' && hostname.endsWith('.public.blob.vercel-storage.com');
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
+  let body: { name?: unknown; category?: unknown; photoUrl?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Neplatná požiadavka.' }, { status: 400 });
+  }
 
-  const name = String(formData.get('name') ?? '').trim();
-  const category = formData.get('category');
-  const photo = formData.get('photo');
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const category = body.category;
+  const photoUrl = typeof body.photoUrl === 'string' ? body.photoUrl : null;
 
   if (!name || name.length > 60) {
     return NextResponse.json({ error: 'Meno kostýmu musí mať 1 až 60 znakov.' }, { status: 400 });
@@ -19,25 +29,8 @@ export async function POST(request: Request) {
   if (!isCategory(category)) {
     return NextResponse.json({ error: 'Neplatná kategória.' }, { status: 400 });
   }
-
-  let photoUrl: string | null = null;
-
-  if (photo instanceof File && photo.size > 0) {
-    if (!ALLOWED_TYPES.includes(photo.type)) {
-      return NextResponse.json({ error: 'Fotka musí byť JPEG, PNG, WEBP alebo HEIC.' }, { status: 400 });
-    }
-    if (photo.size > MAX_PHOTO_BYTES) {
-      return NextResponse.json({ error: 'Fotka je príliš veľká (max 8 MB).' }, { status: 400 });
-    }
-
-    const extension = photo.type.split('/')[1] || 'jpg';
-    const pathname = `costumes/${crypto.randomUUID()}.${extension}`;
-
-    const blob = await put(pathname, photo, {
-      access: 'public',
-      contentType: photo.type,
-    });
-    photoUrl = blob.url;
+  if (photoUrl && !isTrustedBlobUrl(photoUrl)) {
+    return NextResponse.json({ error: 'Neplatná fotka.' }, { status: 400 });
   }
 
   const rows = await sql`
