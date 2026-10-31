@@ -49,6 +49,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const existingNameVote = await sql`
+    SELECT costume_id FROM votes WHERE category = ${category} AND lower(voter_name) = lower(${voterName})
+  `;
+  if (existingNameVote.length > 0) {
+    return NextResponse.json(
+      {
+        error: 'Niekto s týmto menom už v tejto kategórii hlasoval. Ak si to ty, hlas sa nestratil — len v tomto prehliadači/zariadení nevyzeráš ako prihlásený. Ak ide o zhodu mien, skús doplniť priezvisko.',
+        votedCostumeId: existingNameVote[0].costume_id,
+      },
+      { status: 409 }
+    );
+  }
+
   const headerStore = await headers();
   const ip = getClientIp(headerStore);
 
