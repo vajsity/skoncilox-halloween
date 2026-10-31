@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
+const ALLOWED_TYPES = ['image/*'];
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024; // 15 MB, raw phone photos before any resizing
 
 export async function POST(request: Request) {
