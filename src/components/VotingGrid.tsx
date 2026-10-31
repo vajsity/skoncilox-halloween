@@ -31,6 +31,7 @@ export default function VotingGrid({
   const [error, setError] = useState('');
   const [voterName, setVoterName] = useState(readStoredName);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; alt: string } | null>(null);
 
   async function handleVote(costumeId: number) {
     if (votedId !== null || pendingId !== null) return;
@@ -112,13 +113,20 @@ export default function VotingGrid({
             }`}
           >
             {costume.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={costume.photo_url}
-                alt={costume.name}
-                className="h-56 w-full object-cover"
-                loading="lazy"
-              />
+              <button
+                type="button"
+                onClick={() => setLightboxPhoto({ url: costume.photo_url!, alt: costume.name })}
+                className="block w-full"
+                aria-label={`Zväčšiť fotku: ${costume.name}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={costume.photo_url}
+                  alt={costume.name}
+                  className="h-56 w-full object-cover"
+                  loading="lazy"
+                />
+              </button>
             ) : (
               <div className="flex h-40 w-full items-center justify-center bg-[var(--bg-elevated)] text-5xl">
                 🎭
@@ -150,6 +158,31 @@ export default function VotingGrid({
           </div>
         );
       })}
+
+      {lightboxPhoto && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightboxPhoto(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxPhoto(null)}
+            aria-label="Zavrieť"
+            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
+          >
+            ×
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxPhoto.url}
+            alt={lightboxPhoto.alt}
+            className="max-h-full max-w-full rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
