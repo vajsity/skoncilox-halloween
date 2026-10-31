@@ -5,7 +5,7 @@ import { DEVICE_COOKIE, getClientIp } from '@/lib/device';
 import { isCategory } from '@/lib/types';
 
 export async function POST(request: Request) {
-  let body: { costumeId?: unknown; category?: unknown };
+  let body: { costumeId?: unknown; category?: unknown; voterName?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -14,9 +14,13 @@ export async function POST(request: Request) {
 
   const costumeId = Number(body.costumeId);
   const category = body.category;
+  const voterName = typeof body.voterName === 'string' ? body.voterName.trim() : '';
 
   if (!Number.isInteger(costumeId) || !isCategory(category)) {
     return NextResponse.json({ error: 'Neplatná požiadavka.' }, { status: 400 });
+  }
+  if (!voterName || voterName.length > 40) {
+    return NextResponse.json({ error: 'Zadaj svoje meno (max 40 znakov).' }, { status: 400 });
   }
 
   const cookieStore = await cookies();
@@ -50,8 +54,8 @@ export async function POST(request: Request) {
 
   try {
     await sql`
-      INSERT INTO votes (costume_id, category, device_id, ip)
-      VALUES (${costumeId}, ${category}, ${deviceId}, ${ip})
+      INSERT INTO votes (costume_id, category, device_id, voter_name, ip)
+      VALUES (${costumeId}, ${category}, ${deviceId}, ${voterName}, ${ip})
     `;
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
